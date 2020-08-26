@@ -1,6 +1,6 @@
 <template>
   <v-app-bar :color="'white '+color+'--text'" dense fixed>
-    <v-toolbar-title>To Do App</v-toolbar-title>
+    <router-link to="/" class="red--text text-decoration-none"><v-toolbar-title>To Do App</v-toolbar-title></router-link>
 
     <v-spacer></v-spacer>
     
