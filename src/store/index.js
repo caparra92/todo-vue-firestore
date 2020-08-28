@@ -9,11 +9,11 @@ export default new Vuex.Store({
     tasks: []
   },
   getters: {
-    database : state => state.db,
+    database: state => state.db,
     tasks: state => state.tasks
   },
   mutations: {
-    'SET_DATABASE': (state,db) => {
+    'SET_DATABASE': (state, db) => {
       state.db = db
     },
     'ADD_TASK': (state, task) => {
@@ -33,6 +33,85 @@ export default new Vuex.Store({
     }
   },
   actions: {
+    getListenerRealTime(context) {
+      context.getters.database.collection("tasks").onSnapshot( snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === "added") {
+              const source = change.doc.metadata.hasPendingWrites ? "Local" : "Server";
+              if (source == "Server") {
+                context.commit('ADD_TASK', {
+                  id: change.doc.id,
+                  title: change.doc.data().title,
+                  description: change.doc.data().description,
+                  status: change.doc.data().status
+                })
+              } 
+              console.log("local changes: ", change.doc.data());
+            }
+            if (change.type === "modified") {
+              context.commit('MODIFY_TASK',{
+                id: change.doc.id,
+                title: change.doc.data().title,
+                description: change.doc.data().description,
+                status: change.doc.data().status
+              })
+            }
+            if (change.type === "removed") {
+              context.commit('DELETE_TASK',change.doc.id)
+            }
+          });
+        });
+    },
+    getTasks(context) {
+      return new Promise((resolve, reject) => {
+        if(context.getters.tasks > 0){
+          return
+        }
+        
+        context.getters.database
+          .collection("tasks")
+          .get()
+          .then((querySnapshot) => {
+            resolve(querySnapshot)
+          })
+          .catch(error => {
+            reject(error)
+          })
+      })
+    },
+    createTask(context, value) {
+      context.getters.database.collection('tasks').add(value)
+    },
+    editTask({ getters }, value) {
+
+      return new Promise((resolve, reject) => {
+        let task = getters.database.collection("tasks").doc(value.id).get()
+        task
+          .then((doc) => {
+            resolve(doc)
+          })
+          .catch(error => {
+            reject(error)
+          })
+      })
+    },
+    updateTask({ getters }, value) {
+
+      return new Promise(() => {
+        let task = getters.database.collection("tasks").doc(value.id)
+        task.update({
+          title: value.title,
+          description: value.description,
+          status: value.status
+        })
+      })
+    },
+    updateStatus(context, value) {
+      let task = context.getters.database.collection('tasks').doc(value.id)
+      task.update({
+        status: value.done
+      })
+    }
   },
   modules: {
   }

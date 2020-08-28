@@ -2,29 +2,40 @@
   <v-app>
     <NavBar />
     <v-main>
-      <div class="d-flex justify-center align-center my-5 py-5">
+      <div class="d-flex justify-center align-center my-5 py-5 layout">
         <v-container fluid class="align-center justify-center">
           <h1 class="text-center">My tasks</h1>
-          <div class="justify-center align-center my-5" v-for="task in tasks" :key="task.id">
-            <v-row class="d-flex justify-center align-center">
-              <v-col md="2" lg="2">
-                <v-radio-group v-model="done">
-                    <v-radio class="pt-2" :value="task.id"></v-radio>
-                </v-radio-group>
-              </v-col>
-              <v-col md="6" lg="2" class="justify-center align-center">
-                <p :class="{'text-decoration-line-through': radios}" class="title text-center">{{task.title}}</p>
-                <p class="grey--text text-center">{{task.description}}</p>
-              </v-col>
-              <v-col md="2" lg="2">
-                <v-btn icon @click="editTask(task.id)">
-                  <v-icon>mdi-pencil-outline</v-icon>
-                </v-btn>
-              </v-col>
-              <v-col md="2" lg="2">
-                <v-btn icon @click="deleteTask(task.id)">
-                  <v-icon>mdi-delete-outline</v-icon>
-                </v-btn>
+
+          <div
+            class="justify-center align-center my-5"
+            v-for="(task, i) in getAllTasks"
+            :key="`task-${i}`"
+          >
+            <v-row class="justify-center align-center mx-5">
+              <v-col class="d-flex" md="5" lg="5" sm="8">
+                <v-col cols-md="2">
+                  <v-checkbox :label="`Done`" @click="updateStatus(task.id,task.status)"></v-checkbox>
+                </v-col>
+                <v-col cols-md="6" class="justify-center align-center">
+                  <p
+                    :class="{'text-decoration-line-through text-center': task.status}"
+                    class="title text-center"
+                  >{{task.title}}</p>
+                  <p
+                    :class="{'text-decoration-line-through text-center': task.status}"
+                    class="text-sm-body-2 text-center"
+                  >{{task.description}}</p>
+                </v-col>
+                <v-col cols="2">
+                  <v-btn icon @click="editTask(task.id)">
+                    <v-icon>mdi-pencil-outline</v-icon>
+                  </v-btn>
+                </v-col>
+                <v-col cols="2">
+                  <v-btn icon @click="deleteTask(task.id)">
+                    <v-icon>mdi-delete-outline</v-icon>
+                  </v-btn>
+                </v-col>
               </v-col>
             </v-row>
           </div>
@@ -35,12 +46,12 @@
           <v-card-title class="headline grey lighten-2">Update task</v-card-title>
 
           <v-form class="px-5 py-5">
-            <v-text-field :value="tsk.title" ref="title"></v-text-field>
-            <v-text-field :value="tsk.description" ref="description"></v-text-field>
+            <v-text-field v-model="title" :placeholder="tsk.title"></v-text-field>
+            <v-text-field v-model="description" :placeholder="tsk.description"></v-text-field>
             <div class="d-flex">
               <v-radio-group v-model="radios" :mandatory="false">
-                <v-radio label="In progress" value="false"></v-radio>
-                <v-radio label="Done" value="true"></v-radio>
+                <v-radio label="In progress" :value="false"></v-radio>
+                <v-radio label="Done" :value="true"></v-radio>
               </v-radio-group>
             </div>
           </v-form>
@@ -63,6 +74,7 @@
 import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
 import Toastr from "toastr";
+import { mapGetters } from "vuex";
 
 export default {
   name: "Tasks",
@@ -70,89 +82,82 @@ export default {
     NavBar,
     BottomNav,
   },
-  created() {
-    this.$store.getters.database
-      .collection(`tasks`)
-      .onSnapshot((querySnapshot) => {
-        querySnapshot.docChanges().forEach((change) => {
-          const task = {
-            ...change.doc.data(),
-            id: change.doc.id,
-          };
-          switch (change.type) {
-            case "added":
-              // Task added
-              this.$store.commit("ADD_TASK", task);
-              break;
-            case "modified":
-              // Task updated
-              this.$store.commit("MODIFY_TASK", task);
-              return;
-            case "removed":
-              // Task deleted
-              this.$store.commit("DELETE_TASK", change.doc.id);
-              break;
-          }
-        });
-        this.loading = false;
-      });
-  },
   data() {
     return {
       tasks: [],
       selectedTask: [],
+      title: "",
+      description: "",
       done: false,
       dialog: false,
       active: false,
-      radios: ''
+      radios: false,
     };
   },
-  mounted() {
-    this.getTasks();
+  created() {
+    if (this.getAllTasks < 1) {
+      this.$store.dispatch("getListenerRealTime");
+    }
+  },
+  computed: {
+    ...mapGetters({
+      getAllTasks: "tasks",
+    }),
   },
   methods: {
     getTasks() {
-      this.$store.getters.database
-        .collection("tasks")
-        .get()
-        .then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            this.tasks.push({
-              id: doc.id,
-              title: doc.data().title,
-              description: doc.data().description,
-            });
+      this.$store.dispatch("getTasks").then((arrayDocs) => {
+        arrayDocs.forEach((doc) => {
+          this.tasks.push({
+            id: doc.id,
+            title: doc.data().title,
+            description: doc.data().description,
           });
         });
+      });
     },
     editTask(id) {
       this.selectedTask = [];
       this.dialog = true;
-      let task = this.$store.getters.database.collection("tasks").doc(id).get();
-      task.then((doc) => {
-        this.selectedTask.push({
-          id: doc.id,
-          title: doc.data().title,
-          description: doc.data().description,
-        });
-        console.log(this.selectedTask.title);
-      });
-    },
-    updateTask(id) {
-      let task = this.$store.getters.database.collection("tasks").doc(id)
-      task.set({
-          status: this.radios,
-          title: this.$refs.title[0].value,
-          description: this.$refs.description[0].value,
-        })
-        .then(() => {
-          this.dialog = false
-          Toastr.success("Task updated successfully!");
-          console.log(this.radios)
+      this.$store
+        .dispatch("editTask", { id })
+        .then((doc) => {
+          this.selectedTask.push({
+            id: doc.id,
+            title: doc.data().title,
+            description: doc.data().description,
+          });
         })
         .catch((error) => {
           console.log(error);
         });
+    },
+    updateTask(id) {
+      this.dialog = false;
+      this.$store
+        .dispatch("updateTask", {
+          id: id,
+          title: this.title,
+          description: this.description,
+          status: this.radios,
+        })
+        .then(() => {
+          Toastr.success("Task updated successfully", "Task updated", {
+            timeOut: 2000,
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    updateStatus(id,status) {
+      this.$store
+        .dispatch("updateStatus", { done: !status, id })
+        .then(() =>
+          Toastr.success("Task updated successfully", "Task updated", {
+            timeOut: 2000,
+          })
+        );
     },
     deleteTask(id) {
       if (window.confirm("Do you want to delete this task?")) {
@@ -161,9 +166,9 @@ export default {
           .doc(id)
           .delete()
           .then(() => {
-            this.tasks = this.tasks.filter((item) => item.id !== id);
-            this.dialog = false;
-            Toastr.warning("Task deleted!");
+            Toastr.error("Task deleted successfully!", "Task deleted", {
+              timeOut: 2000,
+            });
           })
           .catch((error) => {
             console.log(error);

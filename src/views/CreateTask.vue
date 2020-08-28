@@ -8,9 +8,9 @@
             <v-card class="mt-5">
               <v-card-title>New task</v-card-title>
               <v-form class="mx-2 px-2 my-5 py-2" @submit.prevent="createTask">
-                <v-text-field label="Title" required v-model="newTask.title">Title</v-text-field>
-                <v-text-field label="Description" required v-model="newTask.description">Description</v-text-field>
-                <v-btn color="warning" class="my-2" @click="createTask">Add</v-btn>
+                <v-text-field label="Title" required :rules="inputRules" v-model="newTask.title">Title</v-text-field>
+                <v-text-field label="Description" required :rules="inputRules" v-model="newTask.description">Description</v-text-field>
+                <v-btn color="warning" class="my-2" @click="createTask" :disabled="!valid">Add</v-btn>
               </v-form>
             </v-card>
           </v-col>
@@ -39,24 +39,24 @@ export default {
           description: '',
           status: false
       },
+      inputRules: [
+        v => !!v || 'This field is required'
+      ],
+      valid: true
     };
   },
   methods: {
     createTask() {
-    console.log('adding')
-      this.$store.getters.database
-        .collection("tasks")
-        .add(this.newTask)
-        .then( (doc) => {
-          this.newTask.id = doc.id
-          this.newTask.title = ''
-          this.newTask.description = ''
-         
-          Toastr.success('Task added successfully!')
+      if(this.newTask.title !== '' && this.newTask.description !== '') {
+        this.$store.dispatch('createTask', this.newTask)
+        .then(() => {
+          Toastr.success('Task created successfully!', 'Task created',{timeOut: 2000})
+          this.newTask = {}
         })
-        .catch((error) => {
-          console.error("Error adding document: ", error);
-        });
+        .catch(error => {
+          console.log(error)
+        })
+      }
     },
   },
 };
