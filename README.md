@@ -1,24 +1,32 @@
-# todo-vue-firestore
+# TODO APP
+```
+App feita em vuejs como mini-desafio
+```
 
 ## Project setup
 ```
 npm install
 ```
 
-### Compiles and hot-reloads for development
+### Arquivo de configuracao do firebase
 ```
-npm run serve
+src/config.js
 ```
-
-### Compiles and minifies for production
 ```
-npm run build
+Recomendavel deixar o arquivo de configuracao no .gitignore
 ```
 
-### Lints and fixes files
+### Framework UI utilizado
 ```
-npm run lint
+Vuetify
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+### Libs para gestao do estado e as rotas
+```
+Vuex e Vue router
+```
+
+### Banco de dados no-SQL
+```
+Firebase com cloud firestore
+```
