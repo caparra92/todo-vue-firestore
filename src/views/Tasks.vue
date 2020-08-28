@@ -14,7 +14,7 @@
             <v-row class="justify-center align-center mx-5">
               <v-col class="d-flex" md="5" lg="5" sm="8">
                 <v-col cols-md="2">
-                  <v-checkbox :label="`Done`" @click="updateStatus(task.id,task.status)"></v-checkbox>
+                  <v-checkbox :label="`Done`" @click="updateStatus(task.id,task.status)" :input-value="task.status"></v-checkbox>
                 </v-col>
                 <v-col cols-md="6" class="justify-center align-center">
                   <p
@@ -94,7 +94,7 @@ export default {
       radios: false,
     };
   },
-  created() {
+  mounted() {
     if (this.getAllTasks < 1) {
       this.$store.dispatch("getListenerRealTime");
     }
